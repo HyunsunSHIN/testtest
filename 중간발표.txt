@@ -1,0 +1,116 @@
+1. 프로젝트 목표 및 배경
+[목표]	- Accessibility engine for automated testing HTML-based user interface
+	  in terms of Spatial Navigation Program
+
+[배경]	- This will empower developers to build Spatial Navigation friendly webpage
+	  by checking spatial navigational defects in HTML files.
+
+[상세] 	- this engine is a packaged app in chrome extension of client without needing any server
+
+2. Spatial Navigation Program 설명
+[정의]	- Spatial navigation is the ability to navigate between focusable elements based on their position within a structured document. 
+	  with 4-way direction input using arrow keys.
+[목표] 	- Web technology can be propagated into several industries such as TV, IVI, game console, and upcoming smart devices
+[이미지] - https://github.com/WICG/spatial-navigation/blob/master/images/processing-model-basic.png
+
+
+3. Requirements & Evaluation
+[요구 사항] - This engine must return a report of Trap, Loop, Unreachable HTML elements if exists,
+	     with visualization at mouse over so that developers can easily note the problems to fix.
+	     Our engine should generate zero positive errors in the test page given by LG.
+[상세]	   - Trap: Confined traverse only in a subset of all focusable elements
+	   - Loop: Iterative traverse only in a subset of all focusable elements with one direction key.
+ 	   - Unreachable: Existence of unreachable elements with every traverse.
+	
+[이미지1]    - files://./axe
+[이미지2]    - files://./evaluation
+
+4. Original Plan and Current Status
+[original Plan] - files//spec발표 14페이지 & files//spec발표 15페이지
+[Current status]
+		 - Implemented a chrome extension which embeds spatial Navigation polyfill for every websites
+		 - Research on graph theory to detect trap, loop, unreachable.
+		 - Implemented edge and node extractor of a web page
+		 - Implemented SCC extractor which is necessory for all detectors.
+		 - Implemen ted Trap detector
+
+5. Architecture - files//spec발표 14페이지 
++ (실제 구현 함수 목록 추가하면 좋을듯)
+
+6. Strongly Connected Component(SCC) and its necessities
+
+[Strongly Connected Component]
+
+1. In a strongly connected component(SCC), every vertex is reachable from every other vertex.
+2. Any vertex outside a SCC can not be added to that SCC satisfying above condition.
+
+If we regard a SCC as a node, the SCCs become acyclic DAG.
+
+[이미지] - https://en.wikipedia.org/wiki/Strongly_connected_component#/media/File:Scc.png
+(a, b, e) (f, g) (c, d, h) is SCC.
+
+[Necessities] 
+- Trap detector: 
+Iterate each SCCs to find SCCs which do not have any edges to a node in other SCC.
+[이미지] files://./sccexample.png & files://./metagraph.png  <- 위에 A 트랩 표시할 것. 
+
+- Loop Detector:
+1) make a new graph by leaving only edges of one direction of four of them.
+2) obtain SCCs with this graph
+3) Any SCC whose size is bigger than 1, has loop structure.
+files://./sccexample.png & files://./metagraph.png  <- 위에 (B,E),(C,F),(G,H,I,J,K,L) 트랩 표시할 것. 
+
+- Unreachable Detector(Graph, Starting Node):
+
+1) make a new graph regarding a SCC as a node and edges between SCCs as a single edge.
+2) Find the SCC which the starting node belongs to. 
+3) DFS on the graph starting from that SCC in 2) and mark when visited
+
+Any nodes in unmarked SCCs are unreachable from this node.
+
+7. Kosaraju's algorithm - DFS based linear-time algorithms for finding SCC
+
+[알고리즘 indentation 맞춰서] https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm
+
+8. Trap detector algorithm and its pesudo code
+[중간 발표.ppt 파일: pseudo code]
+
+9. Complexity of algorithms
+[중간 발표.ppt 파일: 복잡도]
+
+10. Demonstration
+
+ Trap detector
+- [Trap Exist] 
+ file://./with_trap_off &  file://./with_trap_on
+
+- [Without trap]
+ file://./without_trap
+
+11. Lessons learned
+
+-[SCC]
+For representing edges, we first implemented it as adjacent matrice,
+which resulted in a huge waste of space since our graph is very sparse in general.
+Thus we used adjacency list to represent edges, by adding new property 'node_id' in all elements(node) which are obtained from return value of  document.body.focusableAreas({'mode': 'all＇}).
+
+-[Condensation]
+  When Depth First Search is done twice in make_scc(), we tried to achieve condensation at the same time. 
+However, we found that SCC should be topologically sorted first for condensation.
+Thus, after completion of make_scc(), we traversed entire graph for condensation.
+
+-[trap detector]
+  We found out the number of traps, that is SCC without any outgoing edges to different SCC, is possible to be more than one.
+That enforced our algorithms to traverse all the SCC list to find all traps in entire graph. 
+
+12. remaining tasks
+- Reducing loading time of web page with many elements with our accessibility engine such as using cache.
+- Development of Loop detector
+- Development of Unreachable detector
+- Implement visualizing effect of problematic HTML element when it is mouse overed.
+- Decide the policy to generate total score and implement score calculator
+- Packaging all the detectors in chrome's devloper tap.
+
+
+
+
